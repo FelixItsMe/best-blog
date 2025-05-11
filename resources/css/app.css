@@ -1,3 +1,27 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    .breadcrumb {
+        @apply flex flex-wrap p-0 mb-4 list-none bg-transparent mt-0;
+    }
+
+    .breadcrumb-item,
+    .breadcrumb-item a {
+        @apply text-slate-400;
+    }
+
+    .breadcrumb-active {
+        @apply font-semibold text-slate-600;
+    }
+
+    .breadcrumb-item+.breadcrumb-item {
+        @apply pl-2;
+    }
+
+    .breadcrumb-item+.breadcrumb-item::before {
+        content: "/";
+        @apply float-left pr-2 text-slate-400;
+    }
+}
