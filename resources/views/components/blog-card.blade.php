@@ -8,7 +8,7 @@
 
 <div>
     <img class="aspect-[4/3] object-cover w-full" src="{{ $image }}" alt="" srcset="">
-    <div class="bg-white dark:bg-gray-900 w-10/12 -translate-y-8 pt-4 pr-2">
+    <div class="bg-white dark:bg-gray-900 w-10/12 -translate-y-8 pt-4 pr-4 max-sm:pl-4">
         <h2 class="dark:text-[#EDEDEC] text-2xl font-bold mb-2">{{ $title }}</h2>
         <p class="dark:text-[#A1A09A] text-[#706f6c] text-xs mb-2">{{ $date }}</p>
         <div class="border-b-2 border-pink-500 w-3/12 mb-2"></div>
