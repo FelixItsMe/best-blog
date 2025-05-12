@@ -6,6 +6,7 @@ use App\Http\Requests\Post\StorePostRequest;
 use App\Http\Requests\Post\UpdatePostRequest;
 use App\Models\Category;
 use App\Models\Post;
+use App\Services\CategoryService;
 use App\Services\ImageService;
 use App\Services\PostServise;
 use Cviebrock\EloquentSluggable\Services\SlugService;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class PostController extends Controller
@@ -24,7 +26,9 @@ class PostController extends Controller
     public function __construct(
         private ImageService $imageService,
         private PostServise $postServise,
+        private CategoryService $categoryService,
     ) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -32,23 +36,22 @@ class PostController extends Controller
     {
         $search = request()->query('search');
         $category = request()->query('category');
-        
+
         $posts = Post::query()
             ->select(['id', 'image', 'slug', 'title', 'preview', 'user_id', 'created_at'])
             ->where('user_id', Auth::user()->id)
-            ->when($search, function(Builder $query, $search){
-                $query->whereLike('title', '%'.trim($search).'%');
+            ->when($search, function (Builder $query, $search) {
+                $query->whereLike('title', '%' . trim($search) . '%');
             })
-            ->when($category, function(Builder $query, $slug){
-                $query->whereHas('categories', function(Builder $query)use($slug){
+            ->when($category, function (Builder $query, $slug) {
+                $query->whereHas('categories', function (Builder $query) use ($slug) {
                     $query->where('slug', $slug);
                 });
             })
             ->latest()
             ->paginate(9);
 
-        $categories = Category::query()
-            ->pluck('name', 'slug');
+        $categories = $this->categoryService->pluckSlug();
 
         return view('pages.main.home', compact('posts', 'categories'));
     }
@@ -58,8 +61,7 @@ class PostController extends Controller
      */
     public function create(): View
     {
-        $categories = Category::query()
-            ->pluck('name', 'id');
+        $categories = $this->categoryService->pluckId();
 
         return view('pages.post.create', compact('categories'));
     }
@@ -124,13 +126,15 @@ class PostController extends Controller
      */
     public function edit(Post $post): View
     {
-        $categories = Category::query()
-            ->withCount([
-                'posts' => function ($query) use ($post) {
-                    $query->where('posts.id', $post->id);
-                }
-            ])
-            ->get();
+        $categories = Cache::remember('post-categories-' . $post->id, 60 * 60 * 1, function() use($post) {
+            return Category::query()
+                ->withCount([
+                    'posts' => function ($query) use ($post) {
+                        $query->where('posts.id', $post->id);
+                    }
+                ])
+                ->get();
+        });
 
         return view('pages.post.edit', compact('post', 'categories'));
     }
@@ -176,6 +180,8 @@ class PostController extends Controller
 
         DB::table('post_categories')->insert($post_categories);
 
+        Cache::delete('post-categories-' . $post->id);
+
         return redirect()
             ->route('post.show', $slug)
             ->with('success', 'Berhasil disimpan');
@@ -188,6 +194,8 @@ class PostController extends Controller
     {
         // NOTE: delete previous image saved.
         $this->imageService->deleteImage($post->image);
+
+        Cache::delete('post-categories-' . $post->id);
 
         $post->delete();
 

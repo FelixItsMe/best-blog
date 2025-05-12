@@ -4,11 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Post;
+use App\Services\CategoryService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 
 class HomeController extends Controller
 {
+    public function __construct(
+        private CategoryService $categoryService,
+    ) {}
+
     public function index() : View {
         $search = request()->query('search');
         $category = request()->query('category');
@@ -35,8 +40,7 @@ class HomeController extends Controller
             ->paginate(6)
             ->withQueryString();
 
-        $categories = Category::query()
-            ->pluck('name', 'slug');
+        $categories = $this->categoryService->pluckSlug();
 
         return view('pages.main.home', compact('posts', 'categories'));
     }
