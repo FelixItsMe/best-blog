@@ -73,7 +73,7 @@
                         </div>
                     </div>
                     @auth
-                        <div class="py-4 border-t">
+                        <div class="py-4 border-t max-sm:px-4">
                             <h1 class="text-4xl text-pink-500 mb-4">Buat Komentar</h1>
                             <form method="POST" action="{{ route('post.comment.store', $post->slug) }}">
                                 @csrf
